@@ -6,7 +6,8 @@ import StreamingAvatar, {
   StreamingEvents, 
   TaskMode, 
   TaskType, 
-  VoiceEmotion 
+  VoiceEmotion,
+  type StartAvatarRequest 
 } from "@heygen/streaming-avatar";
 import { Room } from "livekit-client";
 import {
@@ -426,21 +427,29 @@ export default function InteractiveAvatar({ children }: Props) {
     try {
       console.log("Starting avatar session...");
       
+      // Eerst de avatar initialiseren als die nog niet bestaat
       if (!avatar.current) {
-        console.log("Creating new avatar instance...");
-        const res = await avatar.current.createStartAvatar({
-          quality: AvatarQuality.High,
-          avatarName: AVATAR_ID,
-          knowledgeId: KNOWLEDGE_BASE_ID,
-          language: LANGUAGE,
-          disableIdleTimeout: true,
-          voice: {
-            voiceId: process.env.NEXT_PUBLIC_AVATAR_VOICE_ID
-          }
+        const newToken = await fetchAccessToken();
+        avatar.current = new StreamingAvatar({
+          token: newToken
         });
-        console.log("Avatar session created:", res);
       }
 
+      // Nu weten we zeker dat avatar.current bestaat
+      const config = {
+        quality: 'high',
+        avatarName: AVATAR_ID,
+        knowledgeId: KNOWLEDGE_BASE_ID,
+        version: 'v2',
+        voice: {
+          voiceId: process.env.NEXT_PUBLIC_AVATAR_VOICE_ID
+        }
+      } as StartAvatarRequest;  // Type assertion hier
+
+      const res = await avatar.current.createStartAvatar(config);
+
+      console.log("Avatar session created:", res);
+      
       // Test bericht sturen
       await avatar.current.speak({ 
         text: "Hello, I'm ready to help!",
