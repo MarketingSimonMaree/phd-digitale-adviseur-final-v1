@@ -422,6 +422,54 @@ export default function InteractiveAvatar({ children }: Props) {
     };
   }, [chatMode]); // Voeg chatMode toe aan dependencies
 
+  const startAvatarSession = async () => {
+    try {
+      console.log("Starting avatar session...");
+      
+      if (!avatar.current) {
+        console.log("Creating new avatar instance...");
+        const res = await avatar.current.createStartAvatar({
+          quality: AvatarQuality.High,
+          avatarName: AVATAR_ID,
+          knowledgeId: KNOWLEDGE_BASE_ID,
+          language: LANGUAGE,
+          disableIdleTimeout: true,
+          voice: {
+            voiceId: process.env.NEXT_PUBLIC_AVATAR_VOICE_ID
+          }
+        });
+        console.log("Avatar session created:", res);
+      }
+
+      // Test bericht sturen
+      await avatar.current.speak({ 
+        text: "Hello, I'm ready to help!",
+        taskType: TaskType.TALK,
+        taskMode: TaskMode.SYNC 
+      });
+      console.log("Test message sent successfully");
+
+    } catch (error) {
+      console.error("Error in startAvatarSession:", error);
+      if (error instanceof Error) {
+        setDebug(error.message);
+      }
+    }
+  };
+
+  // Ook event listeners toevoegen
+  useEffect(() => {
+    if (avatar.current) {
+      avatar.current.on('error', (error: any) => {
+        console.error("Avatar error:", error);
+      });
+      
+      avatar.current.on('ready', () => {
+        console.log("Avatar is ready!");
+      });
+    }
+  }, [avatar.current]);
+
   return (
     <div className="relative w-full h-full">
       <div className="absolute inset-0 w-full h-full">
